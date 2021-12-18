@@ -1,9 +1,10 @@
 import secrets
 import os
+from datetime import datetime
 from flask import render_template, redirect, request, flash, url_for
 from comunidadeimpressionadora import app, database, bcrypt
-from comunidadeimpressionadora.forms import FormLogin, FormCriarConta, FormEditPerfil
-from comunidadeimpressionadora.models import User
+from comunidadeimpressionadora.forms import FormLogin, FormCriarConta, FormEditPerfil, FormCriarPost
+from comunidadeimpressionadora.models import User, Post
 from flask_login import login_user, logout_user, current_user, login_required
 from PIL import Image
 
@@ -68,10 +69,17 @@ def logout():
     return redirect(url_for('home'))
 
 
-@app.route("/post/create")
+@app.route("/post/create", methods=["GET", "POST"])
 @login_required
 def create_post():
-    return render_template('createpost.html')
+    form_criar_post = FormCriarPost()
+    if form_criar_post.validate_on_submit():
+        post = Post(title= form_criar_post.title, body= form_criar_post.body, owner= current_user, create_at= datetime.utcnow())
+        database.session.add(post)
+        database.session.commit()
+        flash(f"Post criado com sucesso!", 'alert-success')
+        return redirect(url_for('home'))
+    return render_template('createpost.html', form=form_criar_post)
 
 
 def save_image(image):
