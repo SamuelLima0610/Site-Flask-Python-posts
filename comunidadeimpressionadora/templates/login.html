@@ -36,8 +36,8 @@
                         {% endif%}
                     </div>
                     <div class="form-group">
-                        {{form_login.lembra_dados.label}}
-                        {{form_login.lembra_dados}}
+                        {{form_login.lembra_dados.label(class="form-check-label")}}
+                        {{form_login.lembra_dados(class="form-check-input")}}
                     </div>
                 </fieldset>
                 {{form_login.botao_submit_login(class="btn btn-primary mt-2")}}

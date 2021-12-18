@@ -1,9 +1,11 @@
+import secrets
+import os
 from flask import render_template, redirect, request, flash, url_for
 from comunidadeimpressionadora import app, database, bcrypt
-from comunidadeimpressionadora.forms import FormLogin, FormCriarConta
+from comunidadeimpressionadora.forms import FormLogin, FormCriarConta, FormEditPerfil
 from comunidadeimpressionadora.models import User
 from flask_login import login_user, logout_user, current_user, login_required
-
+from PIL import Image
 
 lista_usuarios = ['Samuel', 'Joao']
 
@@ -55,7 +57,8 @@ def login():
 @app.route("/perfil")
 @login_required
 def perfil():
-    return render_template('perfil.html')
+    image_perfil = url_for('static', filename=f'imgs_perfil/{current_user.user_photo}')
+    return render_template('perfil.html', image_perfil=image_perfil)
 
 
 @app.route("/logout")
@@ -70,3 +73,49 @@ def logout():
 @login_required
 def create_post():
     return render_template('createpost.html')
+
+
+def save_image(image):
+    # adicionar um código aleatório
+    code = secrets.token_hex(8)
+    name, extension = os.path.splitext(image.filename)
+    name_file = name + code + extension
+    path_file = os.path.join(app.root_path, 'static/imgs_perfil', name_file)
+    # reduzir o tamanho da imagem
+    size = (200, 200)
+    reduce_image = Image.open(image)
+    reduce_image.thumbnail(size)
+    reduce_image.save(path_file)
+    # salvar a imagem no diretório
+    return name_file
+
+
+def atualize_courses(form):
+    course_list = []
+    for campo in form:
+        if 'curso_' in campo.name:
+            if campo.data:
+                course_list.append(campo.label.text)
+    if len(course_list) == 0:
+        return 'Não informado'
+    return ';'.join(course_list)
+
+@app.route("/perfil/editar", methods=["GET", "POST"])
+def edit_perfil():
+    form = FormEditPerfil()
+    if form.validate_on_submit():
+        current_user.email = form.email.data
+        current_user.username = form.username.data
+        if form.user_photo.data:
+            image = save_image(form.user_photo.data)
+            current_user.user_photo = image
+        current_user.courses = atualize_courses(form)
+        database.session.commit()
+        flash(f"Perfil atualizado com sucesso!Email: {form.email.data}", 'alert-success')
+        return redirect(url_for('perfil'))
+    elif request.method == "GET":
+        form.email.data = current_user.email
+        form.username.data = current_user.username
+    image_perfil = url_for('static', filename=f'imgs_perfil/{current_user.user_photo}')
+    return render_template('editperfil.html', image_perfil=image_perfil, form=form)
+
