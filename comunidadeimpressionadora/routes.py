@@ -7,8 +7,6 @@ from comunidadeimpressionadora.models import User
 from flask_login import login_user, logout_user, current_user, login_required
 from PIL import Image
 
-lista_usuarios = ['Samuel', 'Joao']
-
 
 @app.route("/")
 def home():
@@ -23,6 +21,7 @@ def contact():
 @app.route("/lista-usuarios")
 @login_required
 def users():
+    lista_usuarios = User.query.all()
     return render_template('usuarios.html', lista_usuarios=lista_usuarios)
 
 
