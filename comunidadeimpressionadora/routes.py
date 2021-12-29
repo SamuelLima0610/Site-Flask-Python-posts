@@ -1,7 +1,7 @@
 import secrets
 import os
-from datetime import datetime
-from flask import render_template, redirect, request, flash, url_for
+#from datetime import datetime
+from flask import render_template, redirect, request, flash, url_for, abort
 from comunidadeimpressionadora import app, database, bcrypt
 from comunidadeimpressionadora.forms import FormLogin, FormCriarConta, FormEditPerfil, FormCriarPost
 from comunidadeimpressionadora.models import User, Post
@@ -11,7 +11,8 @@ from PIL import Image
 
 @app.route("/")
 def home():
-    return render_template('home.html')
+    posts = Post.query.order_by(Post.id.desc())
+    return render_template('home.html', posts=posts)
 
 
 @app.route("/contato")
@@ -74,7 +75,7 @@ def logout():
 def create_post():
     form_criar_post = FormCriarPost()
     if form_criar_post.validate_on_submit():
-        post = Post(title= form_criar_post.title, body= form_criar_post.body, owner= current_user, create_at= datetime.utcnow())
+        post = Post(title=form_criar_post.title.data, body=form_criar_post.body.data, owner=current_user)
         database.session.add(post)
         database.session.commit()
         flash(f"Post criado com sucesso!", 'alert-success')
@@ -108,6 +109,7 @@ def atualize_courses(form):
     return ';'.join(course_list)
 
 @app.route("/perfil/editar", methods=["GET", "POST"])
+@login_required
 def edit_perfil():
     form = FormEditPerfil()
     if form.validate_on_submit():
@@ -126,3 +128,34 @@ def edit_perfil():
     image_perfil = url_for('static', filename=f'imgs_perfil/{current_user.user_photo}')
     return render_template('editperfil.html', image_perfil=image_perfil, form=form)
 
+
+@app.route('/post/<post_id>', methods=["GET", "POST"])
+@login_required
+def show_post(post_id):
+    post = Post.query.get(post_id)
+    if current_user == post.owner:
+        form = FormCriarPost()
+        if request.method == 'GET':
+            form.title.data = post.title
+            form.body.data = post.body
+        elif form.validate_on_submit():
+            post.title = form.title.data
+            post.body = form.body.data
+            database.session.commit()
+            flash(f"Post atualizado com sucesso!", 'alert-success')
+            return redirect(url_for('home'))
+    else:
+        form = None
+    return render_template('post.html', post=post, form=form)
+
+@app.route('/post/exluir/<post_id>', methods=["GET", "POST"])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get(post_id)
+    if current_user == post.owner:
+        database.session.delete(post)
+        database.session.commit()
+        flash(f"Post deletado com sucesso!", 'alert-danger')
+        return redirect(url_for('home'))
+    else:
+        abort(403)

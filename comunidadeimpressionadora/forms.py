@@ -10,10 +10,10 @@ class FormCriarConta(FlaskForm):
 
 
     username = StringField("Nome do usuário: ", validators=[DataRequired()])
-    email= StringField("Email: ", validators=[DataRequired(), Email()])
-    senha= PasswordField("Senha: ", validators=[DataRequired(), Length(6,20)])
-    confirmacao= PasswordField("Confirmação Senha: ", validators=[DataRequired(), EqualTo("senha")])
-    botao_submit_criar_conta= SubmitField("Criar conta")
+    email = StringField("Email: ", validators=[DataRequired(), Email()])
+    senha = PasswordField("Senha: ", validators=[DataRequired(), Length(6,20)])
+    confirmacao = PasswordField("Confirmação Senha: ", validators=[DataRequired(), EqualTo("senha")])
+    botao_submit_criar_conta = SubmitField("Criar conta")
 
 
     def validate_email(self, email):
